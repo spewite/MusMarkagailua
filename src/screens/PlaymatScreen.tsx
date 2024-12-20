@@ -1,60 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, StatusBar, View, Text, Touchable, TouchableOpacity } from "react-native";
+import { StatusBar } from "react-native";
 import styled from 'styled-components/native';
 import Immersive from 'react-native-immersive';
-import GestureRecognizer, { swipeDirections } from "react-native-swipe-detect";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ConfigurationButton from "../components/ConfigurationButton";
-import ResetButton from "../components/ResetButton";
-import {ResetModal, SettingsModal} from "../components/Modals"
 import Clock from "../components/Clock";
-import { PanResponderGestureState } from "react-native";
+import { loadSavedScores } from "../utils/utils";
+import { CenteredView } from "../components/CenteredView";
+import Modals from "../components/playmat/Modals";
 
-// ---------------------- //
-// -----   IMAGES   ----- //
-// ---------------------- //
+// Components
+import Quarter from "../components/playmat/Quarter";
 
-const chickpeakImages: Record<number, string | undefined> = {
-  0: undefined,
-  1: require('../assets/chickpeas/chickpeaks_1.png'),
-  2: require('../assets/chickpeas/chickpeaks_2.png'),
-  3: require('../assets/chickpeas/chickpeaks_3.png'),
-  4: require('../assets/chickpeas/chickpeaks_4.png'),
-  5: require('../assets/chickpeas/chickpeaks_5.png'),
-  6: require('../assets/chickpeas/chickpeaks_6.png'),
-  7: require('../assets/chickpeas/chickpeaks_7.png'),
-  8: require('../assets/chickpeas/chickpeaks_8.png'),
-}
-
+// Images
 const playmatImage = require('../assets/textures/playmat.png');
-const silverChickpea = require('../assets/chickpeas/silver_chickpea.png')
 const chickpeaksMiddle = require('../assets/chickpeas/chickpeaks_middle.png')
-
-const gestureConfig = {
-  velocityThreshold: 0.3,
-  directionalOffsetThreshold: 80,
-};
-
-const pointTypes : Record<string, string> = {
-  "REGULAR_POINT": "REGULAR_POINT",
-  "GAME_POINT": "GAME_POINT",
-}
-
-// ----------------------- //
-// -----   UTILITY   ----- //
-// ----------------------- //
-
-const quarterPointValue = (index: number) => {
-  return isSinglePointQuarter(index) ? 1 : 5;
-}
-
-const isSinglePointQuarter = (index: number) => {
-  return [2,3].includes(index);
-}
-
-const getTeamIndex = (index: number) => {
-  return index === 0 || index === 3 ? 0 : 1;
-}
 
 // -------------------------------------------------------- //
 
@@ -71,43 +30,7 @@ export default function PlaymatScreen() {
 
     // When the player enters the app load the score saved in async storage.
     (async () => {
-      try {
-
-        // -- Max Score -- //
-        const maxScoreJSON = await AsyncStorage.getItem("maxScore");
-        if (maxScoreJSON) {
-          const parsed = JSON.parse(maxScoreJSON);
-          setMaxScore(parsed.maxScore);
-          console.log("Max score loaded successfully: ", parsed.maxScore);
-        } else {
-          console.log("Max score not found on AsyncStorage");
-        }
-
-        // -- Regular Score -- // 
-        const scoreJSON = await AsyncStorage.getItem('score');
-        if (scoreJSON) {
-          const parsed = JSON.parse(scoreJSON);
-          setScore(parsed.score);
-          console.log("Score loaded successfully: ", parsed.score);
-        } else {
-          console.log("Score not found on AsyncStorage");
-        }
-        
-        // -- Game Score -- // 
-        const gameScoreJSON = await AsyncStorage.getItem('gameScore');
-        if (gameScoreJSON) {
-          const parsed = JSON.parse(gameScoreJSON);
-          setGameScore(parsed.gameScore);
-          console.log("Game Score loaded successfully: ", parsed.gameScore);
-        } else {
-          console.log("Game Score not found on AsyncStorage");
-        }
-
-      } catch (error) {
-        console.error("Error reading score:", error);
-      } finally {
-        setLoaded(true); // Indicamos que la carga ha finalizado
-      }
+      await loadSavedScores(setMaxScore, setScore, setGameScore, setLoaded);
     })();
 
     // Enable immersive mode
@@ -121,6 +44,7 @@ export default function PlaymatScreen() {
 
 
   useEffect(() => {
+
     if (!loaded) return;
     (async () => {
       try {
@@ -165,7 +89,7 @@ export default function PlaymatScreen() {
         console.error("Error saving the game score:", error);
       }
     })();
-  }, [gameScore, loaded]); // Agrega 'loaded' como dependencia
+  }, [gameScore, loaded]);
 
 
   // ---------------------- //
@@ -176,31 +100,18 @@ export default function PlaymatScreen() {
     <>
       <StatusBar hidden={true} />
 
-      <CenteredView>
-        <SettingsModal 
-          modalVisible={settingsModalVisible}
-          setModalVisible={setSettingsModalVisible}
-          maxScore={maxScore}
-          setMaxScore={setMaxScore}
-        />
-        <ResetModal
-          modalVisible={resetModalVisible}
-          setModalVisible={setResetModalVisible}
-          setScore={setScore}
-          setGameScore={setGameScore}
-        />
-      </CenteredView>
+      <Modals 
+        settingsModalVisible={settingsModalVisible}
+        setSettingsModalVisible={setSettingsModalVisible}
+        maxScore={maxScore}
+        setMaxScore={setMaxScore}
+        resetModalVisible={resetModalVisible}
+        setResetModalVisible={setResetModalVisible}
+        setScore={setScore}
+        setGameScore={setGameScore}
+      />
 
       <Clock />
-
-      <CenteredView>
-        <ConfigurationButton 
-          onPress={() => {setSettingsModalVisible(true)}}
-        />
-        <ResetButton 
-          onPress={() => {setResetModalVisible(true)}}
-        />
-      </CenteredView>
 
       <CenteredView>
         <ChickpeaksMiddle source={chickpeaksMiddle} />
@@ -226,204 +137,6 @@ export default function PlaymatScreen() {
   );
 };
 
-interface QuarterProps {
-  index: number,
-  score: [number, number],
-  setScore: Function,
-  gameScore: [number, number],
-  setGameScore: Function,
-  maxScore: number,
-}
-
-const Quarter:React.FC<QuarterProps> = ({index, score, setScore, gameScore, setGameScore, maxScore})  => {
-
-  const teamIndex = getTeamIndex(index);
-  const pointValue = quarterPointValue(index);
-
-  // ----------------------- //
-  // -----   UTILITY   ----- //
-  // ----------------------- //
-
-  const increaseScore = () => {
-    let newTeamScore = score[teamIndex]+pointValue;
-    if (newTeamScore>=maxScore) {newTeamScore = maxScore}
-    let newScore = [...score];
-    newScore[teamIndex] = newTeamScore;
-    setScore(newScore);
-  }
-
-  const decreaseScore = () => {
-    let newTeamScore = score[teamIndex]-pointValue;
-    if (newTeamScore<=0) {newTeamScore = 0}
-    let newScore = [...score];
-    newScore[teamIndex] = newTeamScore;
-    setScore(newScore);
-  };
-
-  const increaseGamePoint = (reset = true) => {
-    let newGameScore = [...gameScore];
-    newGameScore[teamIndex] = newGameScore[teamIndex]+1;
-    setGameScore(newGameScore);
-    if (reset) {
-      setScore([0,0]);
-    }
-  }
-
-  const decreaseGamePoint = (reset = true) => {
-    let newTeamScore = gameScore[teamIndex]-1;
-    if (newTeamScore<=0) {newTeamScore = 0}
-    let newScore = [...gameScore];
-    newScore[teamIndex] = newTeamScore;
-    setGameScore(newScore);
-    if (reset) {
-      setScore([0,0]);
-    }
-  }
-
-  // ----------------------- //
-  // -----   GESTURE   ----- //
-  // ----------------------- //
-
-  const onTap = (pointType: string) => {
-
-    if (pointType === pointTypes.REGULAR_POINT) {
-      increaseScore();
-    }
-
-    if (pointType === pointTypes.GAME_POINT) {
-      increaseGamePoint(false);
-    }
-  }
-  
-  const onSwipe = (direction: string, state: PanResponderGestureState, pointType: string) => {
-
-    // Get rid of LEFT and RIGHT swipes.
-    if (direction !== swipeDirections.SWIPE_UP && direction !== swipeDirections.SWIPE_DOWN) return;
-
-    if (index === 0 || index === 1) {
-      direction = direction === swipeDirections.SWIPE_UP ? swipeDirections.SWIPE_DOWN : swipeDirections.SWIPE_UP;
-    }
-
-    switch (direction) {
-      case swipeDirections.SWIPE_UP:
-
-        if (pointType === pointTypes.REGULAR_POINT) {
-          increaseScore();
-        }
-
-        if (pointType === pointTypes.GAME_POINT) {
-          increaseGamePoint(false);
-        }
-
-        break;
-      case swipeDirections.SWIPE_DOWN:
-
-        if (pointType === pointTypes.REGULAR_POINT) {
-          decreaseScore();
-        }
-
-        if (pointType === pointTypes.GAME_POINT) {
-          decreaseGamePoint(false);
-        }
-
-        break;
-      default:
-
-    }
-  };
-
-  // ----------------------- //
-  // -----   RENDER   ----- //
-  // ----------------------- //
-
-  return (
-    <QuarterElement
-      borderLeft={[0, 3].includes(index)}
-      borderTop={[1, 2].includes(index)}
-      style={[
-        !isSinglePointQuarter(index) ? styles.rotate : null,
-      ]}
-    >
-      {!isSinglePointQuarter(index) && (
-        
-        <GestureRecognizer
-          onSwipe={(direction, state) => onSwipe(direction, state, pointTypes.GAME_POINT)}
-          config={gestureConfig}
-          style={[
-            styles.gamePointGestureRecognizer,
-            index === 0 ? styles.positionRight : styles.positionLeft
-          ]}
-          
-        >
-          <GamePointContainer>
-
-            <Tap
-              onPress={() => onTap(pointTypes.GAME_POINT)}
-              style={{flexWrap: 'wrap'}}
-              activeOpacity={1}
-            >
-
-              {[...Array(gameScore[teamIndex])].map((gamePoints, index) => {
-                return <GamePointImage key={index} source={silverChickpea} />
-              })}
-
-            </Tap>
-
-          </GamePointContainer>
-        </GestureRecognizer>
-      )}
-
-      <GestureRecognizer
-        onSwipe={(direction, state) => onSwipe(direction, state, pointTypes.REGULAR_POINT)}
-        config={gestureConfig}
-        style={styles.gestureRecognizer}
-      >
-        <Tap
-          onPress={() => onTap(pointTypes.REGULAR_POINT)}
-          activeOpacity={1}
-        >
-          <ChickpeaImage teamScore={score[teamIndex]} index={index} />
-
-          {!isSinglePointQuarter(index) && score[teamIndex] === maxScore && (
-
-            <AddGamePointButton onPress={() => increaseGamePoint}>
-              <AddGamePointText>Ustela Gehitu</AddGamePointText>
-            </AddGamePointButton>
-          )}
-
-        </Tap>
-
-        <QuarterValueText position={[0,3].includes(index) ? 'right' : 'left'}>
-          {isSinglePointQuarter(index) ? '1' : '5'}
-        </QuarterValueText>
-
-      </GestureRecognizer>
-    </QuarterElement>
-
-  )
-}
-
-interface ChickpeaImageProps {
-  teamScore: number,
-  index: number,
-}
-
-const ChickpeaImage:React.FC<ChickpeaImageProps> = ({teamScore, index}) => {
-
-  let cheackpeaImageIndex = isSinglePointQuarter(index) ? teamScore%5 : Math.trunc(teamScore/5);
-
-  if (teamScore) {
-
-    const imagePath = chickpeakImages[cheackpeaImageIndex];
-    if (imagePath) {
-      return (
-        <Chickpea source={imagePath} />
-      );
-    }
-  }
-
-}
-
 // ---------------------- //
 // -----   STYLES   ----- //
 // ---------------------- // 
@@ -435,135 +148,9 @@ const MainView = styled.ImageBackground`
   flex-wrap: wrap;
 `;
 
-const CenteredView = styled.View`
-  position:absolute;
-  width: 100%;
-  height: 100%;
-  justify-content:center;
-  align-items:center;
-`
 const ChickpeaksMiddle = styled.Image`
   width: 200px;
   height: 200px;
   resize-mode:contain;
   z-index:2;
 `
-
-// -----   QUARTER   ----- //
-
-interface QuarterElementProps {
-  borderLeft: boolean,
-  borderTop: boolean
-}
-
-const QuarterElement = styled.View<QuarterElementProps>`
-  width: 50%;
-  height: 50%;
-  z-index: 1;
-
-  border-style: dashed;
-  border-color: white;
-
-  border-left-width: ${props => props.borderLeft ? '3px' : '0px'};
-  border-top-width: ${props => props.borderTop ? '3px' : '0px'};
-  border-bottom: 3px dashed white;
-
-`;
-
-const Tap = styled.TouchableOpacity`
-  width:100%;
-  padding: 10px;
-  height:100%;
-  justify-content:center;
-  align-items:center;
-`
-
-interface QuarterValueTextProps {
-  position: 'right' | 'left'
-}
-
-const QuarterValueText = styled.Text<QuarterValueTextProps>`
-  color: white;  
-  font-family: Kaxko;
-  position: absolute;
-  bottom: 10px;
-  font-size: 20px;
-  opacity: .5;
-  ${props => props.position}: 40px;
-`
-interface ChickpeaProps {
-  source: string
-}
-
-const Chickpea = styled.Image<ChickpeaProps>`
-  width: 70px;
-  resize-mode: contain;
-`
-
-// -----   RESET   ----- //
-
-const ResetTextButton = styled.TouchableOpacity`
-  z-index: 3;
-  background: rgba(0,0,0,.5);
-  color: white;
-  border: 1px solid white;
-  padding: 8px;
-  border-radius: 3px;
-  position: absolute;
-`
-const ResetText = styled.Text`
-  font-size: 20px;
-  font-family: Vascan;
-  color: white;
-`
-
-// -----   GAME POINTS   ----- //
-
-const GamePointContainer = styled.View`
-  background: rgba(0,0,0,.2);
-  border: 1px dashed white;
-`
-
-const AddGamePointButton = styled.TouchableOpacity`
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, .85);
-  border-radius: 3px;
-  background: rgba(0,0,0,.2);
-`
-
-const AddGamePointText = styled.Text`
-  font-family: Vascan;
-  font-size: 20px;
-  color: rgba(255, 255, 255, .85);
-`
-
-const GamePointImage = styled.Image`
-  width: 25px;
-  height: 25px;
-  resize-mode:contain;
-`
-
-const styles = StyleSheet.create({
-  gestureRecognizer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gamePointGestureRecognizer: {
-    height: '72%',
-    position: 'absolute',
-    minWidth: 48, 
-    marginVertical: 10,
-    zIndex: 4,
-  },
-  positionLeft: {
-    left: 20
-  }, 
-  positionRight: {
-    right: 20
-  },
-  rotate: {
-    transform: [{rotate: '180deg'}]
-  },
-});
