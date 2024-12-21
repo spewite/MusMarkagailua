@@ -236,24 +236,6 @@ const QuarterValueText = styled.Text<QuarterValueTextProps>`
   ${props => props.position}: 40px;
 `
 
-
-// -----   RESET   ----- //
-
-const ResetTextButton = styled.TouchableOpacity`
-  z-index: 3;
-  background: rgba(0,0,0,.5);
-  color: white;
-  border: 1px solid white;
-  padding: 8px;
-  border-radius: 3px;
-  position: absolute;
-`
-const ResetText = styled.Text`
-  font-size: 20px;
-  font-family: Vascan;
-  color: white;
-`
-
 // -----   GAME POINTS   ----- //
 
 const GamePointContainer = styled.View`
@@ -266,6 +248,7 @@ const AddGamePointButton = styled.TouchableOpacity`
   border: 1px solid rgba(255, 255, 255, .85);
   border-radius: 3px;
   background: rgba(0,0,0,.2);
+  margin-bottom: 40px;
 `
 
 const AddGamePointText = styled.Text`
