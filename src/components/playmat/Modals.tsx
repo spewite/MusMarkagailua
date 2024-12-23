@@ -1,7 +1,7 @@
 
 import { CenteredView } from "../CenteredView";
-import ConfigurationButton from "../modals/SettingsButton";
-import ResetButton from "../modals/ResetButton";
+import ConfigurationButton from "../buttons/SettingsButton";
+import ResetButton from "../buttons/ResetButton";
 import SettingsModal from "../modals/SettingsModal";
 import ResetModal from "../modals/ResetModal";
 

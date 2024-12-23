@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { StatusBar } from "react-native";
+import { StatusBar, Dimensions } from "react-native";
 import styled from 'styled-components/native';
 import Immersive from 'react-native-immersive';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Clock from "../components/Clock";
-import { loadSavedScores } from "../utils/utils";
-import { CenteredView } from "../components/CenteredView";
-import Modals from "../components/playmat/Modals";
+import { loadSavedScores, firstOpen } from "../utils/utils";
 
 // Components
+import Clock from "../components/Clock";
+import Modals from "../components/playmat/Modals";
+import TutorialModal from "../components/tutorial/TutorialModal";
 import Quarter from "../components/playmat/Quarter";
+import { CenteredView } from "../components/CenteredView";
+import InfoButton from "../components/buttons/InfoButton";
 
 // Images
 const playmatImage = require('../assets/textures/playmat.png');
@@ -17,16 +19,27 @@ const chickpeaksMiddle = require('../assets/chickpeas/chickpeaks_middle.png')
 
 // -------------------------------------------------------- //
 
+const { width, height } = Dimensions.get('window');
+
 export default function PlaymatScreen() {
 
+  const [loaded, setLoaded] = useState<boolean>(false);
+  const [maxScore, setMaxScore] = useState<number>(20);  
   const [score, setScore] = useState<[number, number]>([0,0]); // First index: 0,3. Second index: 1,2
   const [gameScore, setGameScore] = useState<[number, number]>([0,0]); // First index: Team 1, Second index: Team 2 
+  
+  // Modals
   const [settingsModalVisible, setSettingsModalVisible] = useState<boolean>(false);
   const [resetModalVisible, setResetModalVisible] = useState<boolean>(false);
-  const [maxScore, setMaxScore] = useState<number>(20);  
-  const [loaded, setLoaded] = useState<boolean>(false); // Nuevo estado para seguimiento de carga
+  const [tutorialModalVisible, setTutorialModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
+
+    // Function that executes when it is the first time that the user enters the app.
+    (async () => {
+      await firstOpen(setTutorialModalVisible);
+      await AsyncStorage.setItem("firstTime", JSON.stringify({firstTime: true}));
+    })();
 
     // When the player enters the app load the score saved in async storage.
     (async () => {
@@ -100,6 +113,11 @@ export default function PlaymatScreen() {
     <>
       <StatusBar hidden={true} />
 
+      <TutorialModal 
+        modalVisible={tutorialModalVisible}
+        setModalVisible={setTutorialModalVisible}
+      />
+
       <Modals 
         settingsModalVisible={settingsModalVisible}
         setSettingsModalVisible={setSettingsModalVisible}
@@ -112,6 +130,17 @@ export default function PlaymatScreen() {
       />
 
       <Clock />
+
+      <InfoButton 
+        onPress={() => {setTutorialModalVisible(true)}}
+        style={{
+          position: 'absolute',
+          right: 20,
+          top: height/2,
+          transform: [{rotate: '90deg'}],
+          
+        }}
+      />
 
       <CenteredView>
         <ChickpeaksMiddle source={chickpeaksMiddle} />

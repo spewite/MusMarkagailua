@@ -74,7 +74,7 @@ const ModalBackgroundImage = styled.ImageBackground`
 const AnimatedModalBackground = Animated.createAnimatedComponent(styled.View`
   width: 100%;
   height: 100%;
-  z-index: 999;
+  z-index: 20;
   background: rgba(0, 0, 0, 0.5);
   justify-content: center;
   align-items: center;

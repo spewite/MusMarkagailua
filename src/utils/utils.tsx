@@ -53,3 +53,16 @@ export const loadSavedScores = async (setMaxScore: Function, setScore: Function,
   }
 
 } 
+
+export const firstOpen = async (setTutorialModalVisible: Function) => {
+
+  const firstTime = await AsyncStorage.getItem("firstTime");
+
+  if (!firstTime) {
+    console.log("IT IS THE FIRST TIME THE USER ENTERS THE APP")
+    
+    // Open tutorial modal.
+    setTutorialModalVisible(true);
+  }
+
+}
