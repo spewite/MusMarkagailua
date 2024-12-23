@@ -24,7 +24,7 @@ const Button = styled.TouchableOpacity`
   padding: 10px;
   align-items: center;
   justify-content: center;
-  z-index: 99;
+  z-index: 10;
 `
 
 export default SettingsButton;
