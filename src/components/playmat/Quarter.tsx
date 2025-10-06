@@ -1,7 +1,8 @@
 
 import { StyleSheet } from "react-native";
 import { PanResponderGestureState } from "react-native";
-import GestureRecognizer, { swipeDirections } from "react-native-swipe-detect";
+import GestureRecognizer from "react-native-swipe-detect";
+import swipeDirections from "react-native-swipe-detect";
 import { quarterPointValue, isSinglePointQuarter, getTeamIndex } from "../../utils/utils";
 import { pointTypes } from "../../constants/constants";
 import styled from "styled-components/native";

@@ -1,5 +1,5 @@
 import React from 'react';
-import ResetIcon from '../../assets/svg/reset.svg' // Asegúrate de que la ruta sea correcta
+import ResetIcon from '../../assets/svg/reset.svg'
 import styled from 'styled-components/native';
 
 interface SettingsButtonProps {
